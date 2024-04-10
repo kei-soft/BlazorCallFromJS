@@ -1,0 +1,85 @@
+﻿@page "/"
+@implements IDisposable
+@inject IJSRuntime JS
+
+<PageTitle>Call .NET</PageTitle>
+
+<script>
+    function returnArrayAsync()
+    {
+        DotNet.invokeMethodAsync('BlazorCallFromJS', 'ReturnArrayAsync1', 'JS Param1')
+            .then(data => {
+                console.log(data);
+            });
+
+        DotNet.invokeMethodAsync('BlazorCallFromJS', 'TEST', 'JS Param2')
+            .then(data => {
+                console.log(data);
+            });
+    }
+
+    function sayHello(dotNetHelper, message)
+    {
+        dotNetHelper.invokeMethodAsync('GetHelloMessage', message);
+    }
+</script>
+
+
+
+<p>
+    <button onclick="returnArrayAsync()">
+        Trigger .NET static method
+    </button>
+</p>
+
+
+<p>
+    <button @onclick="TriggerDotNetInstanceMethod">
+        Trigger .NET instance method
+    </button>
+</p>
+
+<p>
+    @result
+</p>
+
+
+<p>
+    See the result in the developer tools console.
+</p>
+
+@code {
+    private DotNetObjectReference<Home>? objRef;
+    private string? result;
+
+    protected override void OnInitialized()
+    {
+        objRef = DotNetObjectReference.Create(this);
+    }
+
+    [JSInvokable]
+    public static Task<string[]> ReturnArrayAsync1(string jsParam)
+    {
+        return Task.FromResult(new string[] { "test1", jsParam });
+    }
+
+    [JSInvokable("TEST")]
+    public static Task<string[]> ReturnArrayAsync2(string jsParam)
+    {
+        return Task.FromResult(new string[] { "test2", jsParam });
+    }
+
+    public async Task TriggerDotNetInstanceMethod()
+    {
+        result = await JS.InvokeAsync<string>("sayHello", objRef, "test3");
+    }
+
+
+    [JSInvokable]
+    public void GetHelloMessage(string message)
+    {
+        Console.WriteLine("SayHello " + message);
+    }
+
+    public void Dispose() => objRef?.Dispose();
+}
